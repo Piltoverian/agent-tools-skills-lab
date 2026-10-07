@@ -22,7 +22,7 @@ Nếu ngày nhập mơ hồ, hỏi lại để xác nhận.
 
 ## Tra cứu tài liệu
 
-Dùng `list_files` để tìm tài liệu chính sách trong `data/`.
+Dùng `list_files` để tìm tài liệu chính sách trong `data/policies`.
 Dùng `read_file` để đọc các tài liệu liên quan.
 
 Đường dẫn truyền vào tool phải tương đối workspace.
