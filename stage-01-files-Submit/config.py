@@ -9,7 +9,7 @@ import paths
 
 PROJECT_NAME = "stage-01-files"
 APP_TITLE = "Stage 01: File tools"
-CAPABILITY_TEXT = "Tools: read_file (đọc file trong workspace), write_file (ghi vào workspace/output/). Không có skill, không chạy lệnh."
+CAPABILITY_TEXT = "Tools: list_files (liệt kê file/thư mục), read_file (đọc file trong workspace), write_file (ghi vào workspace/output/). Không có skill, không chạy lệnh."
 
 # Giới hạn số lần gọi model trong một lượt chat (ModelCallLimitMiddleware).
 MODEL_CALL_LIMIT = 8

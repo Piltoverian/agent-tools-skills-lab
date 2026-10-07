@@ -1,6 +1,6 @@
 # Stage 02: Skills
 
-read_file, write_file + skill catalog. Model tự load SKILL.md bằng read_file.
+list_files, read_file, write_file + skill catalog. Model tự load SKILL.md bằng read_file.
 
 - Tools: `read_file(path)`, `write_file(path, content)`
 - Skills: `weekly-report`

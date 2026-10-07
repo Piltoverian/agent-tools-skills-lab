@@ -1,6 +1,6 @@
 # Stage 01: File tools
 
-read_file, write_file trong workspace. Không có skill, không chạy lệnh.
+list_files, read_file, write_file trong workspace. Không có skill, không chạy lệnh.
 
 - Tools: `read_file(path)`, `write_file(path, content)`
 - Skills: Không có

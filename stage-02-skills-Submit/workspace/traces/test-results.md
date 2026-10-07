@@ -1,5 +1,9 @@
 # Kết quả kiểm tra refund-policy
 
+## Trạng thái hiện tại
+
+Các mục bên dưới là ghi chép từ lượt thử trước khi chuẩn hóa dữ liệu sang `data/policies/`. Chúng chưa được chạy lại sau thay đổi này. Các file JSONL được dẫn trong ghi chép không có trong checkout hiện tại, vì vậy các kết quả model ghi bên dưới chưa thể kiểm chứng độc lập. Xem `analysis.md` ở thư mục gốc của Stage 02 Submit để biết trạng thái mới nhất.
+
 ## Cấu hình
 - Đã đăng ký: read_file, write_file, list_files.
 - Skill: skills/refund-policy/SKILL.md.

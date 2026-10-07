@@ -5,8 +5,17 @@ import json
 import pytest
 
 from reset_workspace import WorkspaceError, ensure_workspace, reset_workspace
-from tools import read_file, write_file
-from tools.files import MAX_READ_BYTES, _read, _write
+from tools import list_files, read_file, write_file
+from tools.files import MAX_READ_BYTES, _list, _read, _write
+
+
+def create_symlink_or_skip(link, target, *, target_is_directory=False):
+    try:
+        link.symlink_to(target, target_is_directory=target_is_directory)
+    except OSError as exc:
+        if getattr(exc, "winerror", None) == 1314:
+            pytest.skip("Windows symlink privilege is unavailable")
+        raise
 
 
 @pytest.fixture
@@ -27,6 +36,49 @@ def test_read_missing_file(ws):
     assert result["ok"] is False and result["error"]["code"] == "FILE_NOT_FOUND"
 
 
+def test_list_files_returns_sorted_direct_files_and_directories(ws):
+    (ws / "data" / "z-note.md").write_text("Z", encoding="utf-8")
+    (ws / "data" / "alpha").mkdir()
+
+    result = _list(ws, "data")
+
+    assert result == {
+        "ok": True,
+        "path": "data",
+        "entries": [
+            {"name": "alpha", "path": "data/alpha", "type": "directory"},
+            {"name": "note.md", "path": "data/note.md", "type": "file"},
+            {"name": "z-note.md", "path": "data/z-note.md", "type": "file"},
+        ],
+    }
+
+
+def test_list_files_empty_directory(ws):
+    (ws / "data" / "empty").mkdir()
+    assert _list(ws, "data/empty") == {"ok": True, "path": "data/empty", "entries": []}
+
+
+def test_list_files_rejects_missing_path_and_file(ws):
+    assert _list(ws, "data/missing")["error"]["code"] == "FOLDER_NOT_FOUND"
+    assert _list(ws, "data/note.md")["error"]["code"] == "IS_A_FILE"
+
+
+@pytest.mark.parametrize("path", ["../outside", "data/../../outside"])
+def test_list_files_rejects_traversal(ws, path):
+    assert _list(ws, path)["error"]["code"] == "PATH_OUTSIDE_WORKSPACE"
+
+
+def test_list_files_rejects_absolute_path(ws):
+    assert _list(ws, str(ws / "data"))["error"]["code"] == "PATH_OUTSIDE_WORKSPACE"
+
+
+def test_list_files_rejects_symlink_escape(ws, tmp_path):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    create_symlink_or_skip(ws / "data" / "escape", outside, target_is_directory=True)
+    assert _list(ws, "data")["error"]["code"] == "PATH_OUTSIDE_WORKSPACE"
+
+
 @pytest.mark.parametrize("path", ["../secret.txt", "data/../../secret.txt"])
 def test_read_traversal_blocked(ws, path):
     (ws.parent / "secret.txt").write_text("secret")
@@ -39,7 +91,7 @@ def test_read_absolute_path_blocked(ws):
 
 def test_read_symlink_escape_blocked(ws):
     (ws.parent / "secret.txt").write_text("secret")
-    (ws / "data" / "link.txt").symlink_to(ws.parent / "secret.txt")
+    create_symlink_or_skip(ws / "data" / "link.txt", ws.parent / "secret.txt")
     result = _read(ws, "data/link.txt")
     assert result["error"]["code"] == "PATH_OUTSIDE_WORKSPACE"
     assert "content" not in result
@@ -72,7 +124,7 @@ def test_write_outside_output_rejected(ws, path):
 def test_write_absolute_and_symlink_escape_rejected(ws, tmp_path):
     outside = tmp_path / "outside"
     outside.mkdir()
-    (ws / "output" / "escape").symlink_to(outside, target_is_directory=True)
+    create_symlink_or_skip(ws / "output" / "escape", outside, target_is_directory=True)
     assert _write(ws, str(ws / "output" / "a.md"), "x")["error"]["code"] == "PATH_OUTSIDE_WORKSPACE"
     assert _write(ws, "output/escape/a.md", "x")["ok"] is False
     assert list(outside.iterdir()) == []
@@ -80,6 +132,9 @@ def test_write_absolute_and_symlink_escape_rejected(ws, tmp_path):
 
 def test_tools_return_json_against_project_workspace(lab_dirs):
     assert json.loads(read_file.invoke({"path": "data/weekly_notes.md"}))["ok"] is True
+    listing = json.loads(list_files.invoke({"path": "data"}))
+    assert {entry["name"] for entry in listing["entries"]} == {"weekly_notes.md", "policies"}
+    assert next(entry for entry in listing["entries"] if entry["name"] == "policies")["type"] == "directory"
     written = json.loads(write_file.invoke({"path": "output/t.md", "content": "ok"}))
     assert written["status"] == "created"
     assert json.loads(read_file.invoke({"path": "output/t.md"}))["content"] == "ok"

@@ -8,6 +8,7 @@ Quy tắc:
 - Khi tool trả lỗi, báo lỗi cho người dùng và đề xuất cách xử lý; không bịa kết quả."""
 
 CAPABILITY_PROMPT = """Workspace:
+- list_files liệt kê file và thư mục trực tiếp, không đệ quy.
 - Mọi đường dẫn file đều tương đối workspace, ví dụ data/weekly_notes.md.
 - read_file đọc được file trong workspace. write_file chỉ ghi được dưới output/, ví dụ output/summary.md.
 - Bạn không chạy được lệnh shell trong project này."""

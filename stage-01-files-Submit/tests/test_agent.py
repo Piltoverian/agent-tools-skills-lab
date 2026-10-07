@@ -20,7 +20,7 @@ def stream_events(agent, messages):
 
 
 def test_registered_tools():
-    assert [t.name for t in TOOLS] == ["read_file", "write_file"]
+    assert [t.name for t in TOOLS] == ["read_file", "write_file", "list_files"]
 
 
 def test_read_then_write_with_parallel_calls_and_missing_file(lab_dirs):
@@ -50,9 +50,28 @@ def test_read_then_write_with_parallel_calls_and_missing_file(lab_dirs):
 
     requests = [e["data"] for e in events if e["event"] == "model_request"]
     assert requests[0]["system_prompt"] == system_prompt()
-    assert [t["name"] for t in requests[0]["tools"]] == ["read_file", "write_file"]
+    assert [t["name"] for t in requests[0]["tools"]] == ["read_file", "write_file", "list_files"]
     assert requests[0]["tools"][1]["parameters"]["required"] == ["path", "content"]
     second_roles = [m["role"] for m in requests[1]["messages"]]
     assert second_roles == ["user", "assistant", "tool", "tool"]
     assert {m["tool_call_id"] for m in requests[1]["messages"] if m["role"] == "tool"} == {"r1", "r2"}
     assert new_messages[-1].content == "Đã ghi output/summary.md"
+
+
+def test_list_files_call_is_traced_and_schema_is_sent(lab_dirs):
+    model = ScriptedChatModel(
+        responses=[
+            AIMessage(content="", tool_calls=[{"name": "list_files", "args": {"path": "data"}, "id": "l1"}]),
+            AIMessage(content="", tool_calls=[{"name": "read_file", "args": {"path": "data/policies/policy-before-oct.md"}, "id": "r1"}]),
+            AIMessage(content="Đã tìm và đọc chính sách cũ."),
+        ]
+    )
+    events, _ = stream_events(build_agent(model), [HumanMessage(content="Tìm và đọc chính sách cũ.")])
+
+    finished = {event["data"]["tool_call_id"]: event["data"] for event in events if event["event"] == "tool_finished"}
+    entries = finished["l1"]["result"]["entries"]
+    assert {entry["name"] for entry in entries} == {"weekly_notes.md", "policies"}
+    assert next(entry for entry in entries if entry["name"] == "policies")["type"] == "directory"
+    assert finished["r1"]["result"]["ok"] is True
+    requests = [event["data"] for event in events if event["event"] == "model_request"]
+    assert [tool["name"] for tool in requests[0]["tools"]] == ["read_file", "write_file", "list_files"]

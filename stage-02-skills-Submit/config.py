@@ -9,7 +9,7 @@ import paths
 
 PROJECT_NAME = "stage-02-skills"
 APP_TITLE = "Stage 02: Skills"
-CAPABILITY_TEXT = "Tools: read_file, write_file. Skills: catalog tự phát hiện từ workspace/skills, model tự load SKILL.md bằng read_file. Không chạy lệnh."
+CAPABILITY_TEXT = "Tools: list_files, read_file, write_file. Skills: catalog tự phát hiện từ workspace/skills, model tự load SKILL.md bằng read_file. Không chạy lệnh."
 
 # Giới hạn số lần gọi model trong một lượt chat (ModelCallLimitMiddleware).
 MODEL_CALL_LIMIT = 8

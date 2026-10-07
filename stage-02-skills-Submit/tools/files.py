@@ -39,19 +39,23 @@ def _list(workspace: Path, path: str) -> dict:
 
     entries = []
 
-    for child in sorted(
-        (f for f in target.iterdir() if f.is_file()),
-        key=lambda item: item.name,
-    ):
+    for child in sorted(target.iterdir(), key=lambda item: item.name):
         child_rel = child.relative_to(root).as_posix()
         resolved, error = _resolve(workspace, child_rel)
         if error:
             return error
 
+        if resolved.is_dir():
+            entry_type = "directory"
+        elif resolved.is_file():
+            entry_type = "file"
+        else:
+            return _error("UNSUPPORTED_ENTRY", f"Không hỗ trợ mục trong thư mục: {child.name}")
+
         entries.append({
             "name": child.name,
             "path": child_rel,
-            "type": "file",
+            "type": entry_type,
         })
 
     return {"ok": True, "path": rel, "entries": entries}
@@ -135,7 +139,7 @@ def write_file(path: str, content: str) -> str:
 
 @tool
 def list_files(path: str = ".") -> str:
-    """Liệt kê các file trực tiếp trong thư mục workspace, không đệ quy.
+    """Liệt kê các file và thư mục trực tiếp trong workspace, không đệ quy.
 
     path là đường dẫn tương đối workspace.
     Dùng "." để liệt kê thư mục gốc workspace.
