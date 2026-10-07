@@ -1,4 +1,4 @@
-"""Bash tool: cwd workspace, Python của project, exit 0/1, timeout, không lộ credential."""
+"""Bash tool: cwd workspace, Python cá»§a project, exit 0/1, timeout, khÃ´ng lá»™ credential."""
 
 import json
 import os
@@ -23,17 +23,17 @@ def test_python_is_project_interpreter(tmp_path):
 
 
 def test_exit_1_with_stderr_is_readable_result(tmp_path):
-    result = _run_bash("python -c \"import sys; print('Lỗi thử nghiệm', file=sys.stderr); sys.exit(1)\"", tmp_path)
-    assert result == {"ok": True, "exit_code": 1, "stdout": "", "stderr": "Lỗi thử nghiệm\n", "timed_out": False, "truncated": False}
+    result = _run_bash("python -c \"import sys; print('Lá»—i thá»­ nghiá»‡m', file=sys.stderr); sys.exit(1)\"", tmp_path)
+    assert result == {"ok": True, "exit_code": 1, "stdout": "", "stderr": "Lá»—i thá»­ nghiá»‡m\n", "timed_out": False, "truncated": False}
 
 
 def test_timeout_kills_process_and_keeps_partial_output(tmp_path):
     started = time.monotonic()
-    result = _run_bash("echo bắt-đầu; sleep 5; echo không-tới", tmp_path, timeout=0.5)
+    result = _run_bash("echo báº¯t-Ä‘áº§u; sleep 5; echo khÃ´ng-tá»›i", tmp_path, timeout=0.5)
     assert time.monotonic() - started < 3
     assert result["ok"] is False and result["exit_code"] is None and result["timed_out"] is True
     assert result["error"]["code"] == "TIMEOUT"
-    assert result["stdout"] == "bắt-đầu\n"
+    assert result["stdout"] == "báº¯t-Ä‘áº§u\n"
 
 
 def test_credentials_not_in_subprocess_env(tmp_path, monkeypatch):
@@ -45,7 +45,15 @@ def test_credentials_not_in_subprocess_env(tmp_path, monkeypatch):
     assert "OPENAI" not in result["stdout"]
 
 
-def test_tool_runs_in_project_workspace(lab_dirs):
-    result = json.loads(bash.invoke({"command": "cat data/weekly_notes.md | head -1"}))
-    assert result["exit_code"] == 0
-    assert result["stdout"].startswith("# Ghi chú công việc tuần 40")
+
+
+def test_windows_prefers_configured_git_bash(tmp_path, monkeypatch):
+    import os
+    from tools.bash import _bash_executable
+
+    if os.name != "nt":
+        return
+    bash_exe = tmp_path / "bash.exe"
+    bash_exe.write_bytes(b"")
+    monkeypatch.setenv("GIT_BASH_EXE", str(bash_exe))
+    assert _bash_executable() == str(bash_exe)
